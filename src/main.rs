@@ -10,8 +10,8 @@ fn main ()
     // are automatically added as participants of that task
     // 'print' prints out the list of participants and how much they pay
     println! ("usage:\n\
-			  add NAME\n\
-			  part PARTICPANT TASK\n\
+			  add NAME...\n\
+			  part TASK PARTICPANT...\n\
 			  pay PARTICIPANT TASK AMOUNT\n\
 			  print\n");
     let mut pay = Payment::new ();
@@ -27,7 +27,7 @@ fn main ()
             Ok (()) => (),
             Err (msg) => println! ("{}", msg),
         }
-        dbg! (&pay);
+        //dbg! (&pay);
         //let parts = Regex::new (r"\s")
         //    .unwrap ()
         //    .split (&input)
