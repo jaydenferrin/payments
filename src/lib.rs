@@ -15,8 +15,6 @@ pub mod payments
     #[derive(Debug)]
     struct Task
     {
-        //pub name: String,
-        //pub owner: String,
         pub participants: HashSet<String>,
         pub cost: i32,
     }
@@ -54,18 +52,6 @@ pub mod payments
                 Some (_) => return Err ("not a command"),
                 None => return Err ("syntax error"),
             }
-            //match parts.get (0)
-            //{
-            //    Some (&"add")   => return self.add (parts.get (1).copied ()),
-            //    Some (&"part")  => return self.part (parts.get (1).copied (),
-            //                                         parts.get (2).copied ()),
-            //    Some (&"pay")   => return self.pay (parts.get (1).copied (),
-            //                                        parts.get (2).copied (),
-            //                                        parts.get (3).copied ()),
-            //    Some (&"print") => self.print (),
-            //    Some (_)        => return Err("not a command"),
-            //    None            => return Err("command formatted incorrectly"),
-            //}
             Ok (())
         }
 
@@ -176,7 +162,6 @@ pub mod payments
             Ok (())
         }
 
-        //fn pay (&mut self, try_name: Option<&str>, try_task: Option<&str>, try_price: Option<&str>)
         fn pay (&mut self, args: &[&str]) -> Result<(), &'static str>
         {
             let name = match args.get (0)
@@ -237,19 +222,12 @@ pub mod payments
             Ok (())
         }
 
-        //fn part (&mut self, try_name: Option<&str>, try_task: Option<&str>) -> Result<(), &'static str>
         fn part (&mut self, args: &[&str]) -> Result<(), &'static str>
         {
             if args.len () <= 1
             {
                 return Err ("Not enough arguments");
             }
-            //let name = match args.get (1)
-            //{
-            //    Some (&"") => return Err ("Not enough arguments"),
-            //    Some (&n) => n,
-            //    None => return Err ("Not enough arguments"),
-            //};
             let task_name = match args.get (0)
             {
                 Some (&"") => return Err ("Not enough arguments"),

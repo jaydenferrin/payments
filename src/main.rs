@@ -28,11 +28,5 @@ fn main ()
             Err (msg) => println! ("{}", msg),
         }
         //dbg! (&pay);
-        //let parts = Regex::new (r"\s")
-        //    .unwrap ()
-        //    .split (&input)
-        //    .collect::<Vec<&str>> ();
-        ////let parts = input.split (r"\s").collect::<Vec<&str>> ();
-        //dbg! (parts);
     }
 }
