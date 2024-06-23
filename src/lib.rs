@@ -5,6 +5,8 @@ pub mod payments
     use std::io::{BufWriter, BufReader};
     use regex::Regex;
     use serde::{Serialize, Deserialize};
+
+    type PaymentResult = Result<(), String>;
     
     #[derive(Debug, Deserialize, Serialize)]
     struct Participant
@@ -41,7 +43,7 @@ pub mod payments
             }
         }
 
-        pub fn command (&mut self, com: &str) -> Result<(), &'static str>
+        pub fn command (&mut self, com: &str) -> PaymentResult
         {
             let parts = Regex::new (r"\s+")
                 .unwrap ()
@@ -56,28 +58,28 @@ pub mod payments
                 Some (&"print") => self.print (end),
                 Some (&"save")  => return self.save (end),
                 Some (&"load")  => return self.load (end),
-                Some (_)        => return Err ("not a command"),
-                None            => return Err ("syntax error"),
+                Some (&a)       => return Err (format! ("{} not recognized as a command", a)),
+                None            => return Err (String::from ("syntax error")),
             }
             Ok (())
         }
 
-        fn load (&mut self, args: &[&str]) -> Result<(), &'static str>
+        fn load (&mut self, args: &[&str]) -> PaymentResult
         {
             let filename = match args.get (0)
             {
                 Some (&f) => f,
-                None => return Err ("Not enough arguments"),
+                None => return Err (String::from ("Not enough arguments")),
             };
             let file = match File::open (filename)
             {
                 Ok (f) => f,
-                Err (_) => return Err ("Unable to open file"),
+                Err (_) => return Err (format! ("Unable to open file {}", filename)),
             };
             let payment: Payment = match serde_json::from_reader (BufReader::new (file))
             {
                 Ok (pay) => pay,
-                Err (_) => return Err ("Error deserializing file"),
+                Err (e) => return Err (format! ("Error deserializing file:\n{}", e)),
             };
             self.participants = payment.participants;
             self.tasks = payment.tasks;
@@ -85,7 +87,7 @@ pub mod payments
         }
 
 
-        fn save (&mut self, args: &[&str]) -> Result<(), &'static str>
+        fn save (&mut self, args: &[&str]) -> PaymentResult
         {
             self.calculate ();
             match args.get (0)
@@ -95,27 +97,27 @@ pub mod payments
             }
         }
 
-        fn save_file (&self, filename: &str) -> Result<(), &'static str>
+        fn save_file (&self, filename: &str) -> PaymentResult
         {
             let file = match File::create (filename)
             {
                 Ok (f) => f,
-                Err (_) => return Err ("Unable to open file"),
+                Err (_) => return Err (format! ("Unable to open file {}", filename)),
             };
             let write = BufWriter::new (file);
             match serde_json::to_writer_pretty (write, &self)
             {
                 Ok (_) => Ok (()),
-                Err (_) => Err ("Error serializing the object"),
+                Err (e) => Err (format! ("Error serializing the object:\n{}", e)),
             }
         }
         
-        fn save_string (&self) -> Result<(), &'static str>
+        fn save_string (&self) -> PaymentResult
         {
             let json = match serde_json::to_string_pretty (&self)
             {
                 Ok (val) => val,
-                Err (_) => return Err ("Something went wrong serializing the object"),
+                Err (e) => return Err (format! ("Something went wrong serializing the object:\n{}", e)),
             };
             println! ("{}", json);
             Ok (())
@@ -215,25 +217,25 @@ pub mod payments
             }
         }
 
-        fn add (&mut self, args: &[&str]) -> Result<(), &'static str>
+        fn add (&mut self, args: &[&str]) -> PaymentResult
         {
             if args.is_empty ()
             {
-                return Err ("Not enough arguments");
+                return Err (String::from ("Not enough arguments"));
             }
             for &arg in args
             {
                 let name = match arg
                 {
-                    "" => return Err ("Not enough arguments"),
-                    "-a" => return Err ("invalid name"),
+                    "" => return Err (String::from ("Not enough arguments")),
+                    "-a" => return Err (String::from ("invalid name")),
                     n => n,
                 };
                 // if there is already a participant with this name, we don't want
                 // to overwrite them
                 if self.participants.contains_key (name)
                 {
-                    return Err("participant {name} was already added");
+                    return Err(format! ("participant {name} was already added"));
                 }
                 self.participants.insert (String::from (name), Participant
                                   {
@@ -246,30 +248,32 @@ pub mod payments
             Ok (())
         }
 
-        fn pay (&mut self, args: &[&str]) -> Result<(), &'static str>
+        fn pay (&mut self, args: &[&str]) -> PaymentResult
         {
             let name = match args.get (0)
             {
-                Some (&"") => return Err ("Not enough arguments"),
+                Some (&"") => return Err (String::from ("Not enough arguments")),
                 Some (&n) => n,
-                None => return Err ("Not enough arguments"),
+                None => return Err (String::from ("Not enough arguments")),
             };
             let task_name = match args.get (1)
             {
-                Some (&"") => return Err ("Not enough arguments"),
+                Some (&"") => return Err (String::from ("Not enough arguments")),
                 Some (&n) => n,
-                None => return Err ("Not enough arguments"),
+                None => return Err (String::from ("Not enough arguments")),
             };
             let price_string = match args.get (2)
             {
-                Some (&"") => return Err ("Not enough arguments"),
+                Some (&"") => return Err (String::from ("Not enough arguments")),
                 Some (&n) => n,
-                None => return Err ("Not enough arguments"),
+                None => return Err (String::from ("Not enough arguments")),
             };
             let price = match price_string.parse::<f32> ()
             {
                 Ok (p) => p,
-                Err (_) => return Err ("Must input a valid decimal number for the price"),
+                Err (_) => return Err (format! (
+                        "{} not a valid decimal number for the price"
+                        , price_string)),
             };
             // if this participant doesn't yet exist, add them
             if !self.participants.contains_key (name)
@@ -323,22 +327,22 @@ pub mod payments
             Ok (())
         }
 
-        fn part (&mut self, args: &[&str]) -> Result<(), &'static str>
+        fn part (&mut self, args: &[&str]) -> PaymentResult
         {
             if args.len () <= 1
             {
-                return Err ("Not enough arguments");
+                return Err (String::from ("Not enough arguments"));
             }
             let task_name = match args.get (0)
             {
-                Some (&"") => return Err ("Not enough arguments"),
+                Some (&"") => return Err (String::from ("Not enough arguments")),
                 Some (&n) => n,
-                None => return Err ("Not enough arguments"),
+                None => return Err (String::from ("Not enough arguments")),
             };
             let task = match self.tasks.get_mut (task_name)
             {
                 Some (result) => result,
-                None => return Err ("Task {task_name} has not yet been added"),
+                None => return Err (format! ("Task {task_name} has not yet been added")),
             };
             for &arg in &args[1..]
             {
