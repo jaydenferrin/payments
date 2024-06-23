@@ -127,9 +127,13 @@ pub mod payments
 
         fn rename (&mut self, args: &[&str]) -> PaymentResult
         {
-            if args.len () < 2
+            if args.len () != 2
             {
-                return Err (String::from ("Not enough arguments"));
+                return Err (String::from ("remove must be called with 2 arguments"));
+            }
+            if self.participants.contains_key (args[1]) || self.tasks.contains_key (args[1])
+            {
+                return Err (format! ("{} already exists", args[1]));
             }
             // see if we are renaming a participant
             if let Some (mut part) = self.participants.remove (args[0])
@@ -248,32 +252,32 @@ pub mod payments
 
         fn print_participant (&self, part: &Participant)
         {
-                println! ("{} owes {}", part.name, part.sum.unwrap ());
-                if !part.tasks.is_empty ()
-                {
-                    println! ("  participated in:");
-                }
-                for task_name in &part.tasks
-                {
-                    let task = self.tasks.get (task_name).unwrap ();
-                    println! ("    {task_name}: {} / {} = {}"
-                              , task.cost as f32 / 100f32
-                              , task.participants.len ()
-                              , (task.cost as f32
-                                 / task.participants.len () as f32).round ()
-                              / 100f32);
-                }
-                if !part.paid_tasks.is_empty ()
-                {
-                    println! ("  paid for:");
-                }
-                for task_name in &part.paid_tasks
-                {
-                    println! ("    {task_name}: {}",
-                              self.tasks.get (task_name)
-                              .unwrap ()
-                              .cost as f32 / 100f32);
-                }
+            println! ("{} owes {}", part.name, part.sum.unwrap ());
+            if !part.tasks.is_empty ()
+            {
+                println! ("  participated in:");
+            }
+            for task_name in &part.tasks
+            {
+                let task = self.tasks.get (task_name).unwrap ();
+                println! ("    {task_name}: {} / {} = {}"
+                          , task.cost as f32 / 100f32
+                          , task.participants.len ()
+                          , (task.cost as f32
+                             / task.participants.len () as f32).round ()
+                          / 100f32);
+            }
+            if !part.paid_tasks.is_empty ()
+            {
+                println! ("  paid for:");
+            }
+            for task_name in &part.paid_tasks
+            {
+                println! ("    {task_name}: {}",
+                          self.tasks.get (task_name)
+                          .unwrap ()
+                          .cost as f32 / 100f32);
+            }
         }
 
         fn print_task (&self, task: &Task)
@@ -344,7 +348,11 @@ pub mod payments
                 // to overwrite them
                 if self.participants.contains_key (name)
                 {
-                    return Err(format! ("participant {name} was already added"));
+                    return Err (format! ("participant {name} was already added"));
+                }
+                if self.tasks.contains_key (name)
+                {
+                    return Err (format! ("A task named {name} exists"));
                 }
                 self.participants.insert (String::from (name), Participant
                                   {
