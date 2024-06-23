@@ -149,7 +149,10 @@ pub mod payments
         fn print_participant (&self, part: &Participant)
         {
                 println! ("{} owes {}", part.name, part.sum.unwrap ());
-                println! ("  participated in:");
+                if !part.tasks.is_empty ()
+                {
+                    println! ("  participated in:");
+                }
                 for task_name in &part.tasks
                 {
                     println! ("    {task_name}: {}",
@@ -157,7 +160,10 @@ pub mod payments
                               .unwrap ()
                               .cost as f32 / 100f32);
                 }
-                println! ("  paid for:");
+                if !part.paid_tasks.is_empty ()
+                {
+                    println! ("  paid for:");
+                }
                 for task_name in &part.paid_tasks
                 {
                     println! ("    {task_name}: {}",
