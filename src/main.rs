@@ -1,4 +1,5 @@
 use std::io;
+use std::io::Write;
 use payments::payments::Payment;
 
 fn main ()
@@ -17,6 +18,8 @@ fn main ()
     let mut pay = Payment::new ();
     loop
     {
+        print! ("payments$ ");
+        io::stdout ().flush ().expect ("Something went wrong");
         let mut input = String::new ();
         io::stdin ()
             .read_line (&mut input)
@@ -25,7 +28,7 @@ fn main ()
         match result
         {
             Ok (()) => (),
-            Err (msg) => println! ("{}", msg),
+            Err (msg) => eprintln! ("{}", msg),
         }
         //dbg! (&pay);
     }

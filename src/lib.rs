@@ -60,7 +60,7 @@ pub mod payments
                 Some (&"load")  => return self.load (end),
                 Some (&"rename")=> return self.rename (end),
                 Some (&"remove")=> return self.remove (end),
-                Some (&a)       => return Err (format! ("{} not recognized as a command", a)),
+                Some (&a)       => return Err (format! ("{} is not recognized as a command", a)),
                 None            => return Err (String::from ("syntax error")),
             }
             Ok (())
