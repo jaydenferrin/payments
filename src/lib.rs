@@ -38,7 +38,7 @@ pub mod payments
 
         pub fn command (&mut self, com: &str) -> Result<(), &'static str>
         {
-            let parts = Regex::new (r"\s")
+            let parts = Regex::new (r"\s+")
                 .unwrap ()
                 .split (com)
                 .collect::<Vec<&str>> ();
