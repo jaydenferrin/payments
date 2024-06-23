@@ -15,6 +15,7 @@ pub mod payments
     #[derive(Debug)]
     struct Task
     {
+        pub owner: String,
         pub participants: HashSet<String>,
         pub cost: i32,
     }
@@ -198,27 +199,39 @@ pub mod payments
                                       sum: None,
                                   });
             }
-            // if there is already a task with this name, we don't want
-            // to overwrite them
-            if self.tasks.contains_key (task_name)
+            // see if the task is being edited or added
+            let task = match self.tasks.get_mut (task_name)
             {
-                return Err ("task {task_name} was already added");
-            }
-            self.tasks.insert (String::from (task_name), Task
-                          {
-                              //name: String::from (task_name),
-                              //owner: String::from (name),
-                              participants: HashSet::new (),
-                              cost: (price * 100f32) as i32,
-                          });
+                Some (val) =>
+                {
+                    // this task already exists, check if the owner should be
+                    // changed and change the cost
+                    val.cost = (price * 100f32) as i32;
+                    if val.owner != name
+                    {
+                        // TODO change owner and remove old owner from participants
+                    }
+                    val
+                },
+                None =>
+                {
+                    self.tasks.insert (String::from (task_name), Task
+                                  {
+                                      //name: String::from (task_name),
+                                      owner: String::from (name),
+                                      participants: HashSet::new (),
+                                      cost: (price * 100f32) as i32,
+                                  });
+                    self.tasks.get_mut (task_name).unwrap ()
+                },
+            };
             // add this task to the paid tasks of the participant
             let participant = self.participants.get_mut (name).unwrap ();
             participant.paid_tasks.insert (String::from (task_name));
             participant.tasks.insert (String::from (task_name));
-            self.tasks.get_mut (task_name)
-                .unwrap ()
-                .participants
-                .insert (String::from (name));
+            //self.tasks.get_mut (task_name)
+            //    .unwrap ()
+                task.participants.insert (String::from (name));
             Ok (())
         }
 
