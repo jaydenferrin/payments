@@ -15,6 +15,7 @@ pub mod payments
     #[derive(Debug)]
     struct Task
     {
+        pub name: String,
         pub owner: String,
         pub participants: HashSet<String>,
         pub cost: i32,
@@ -209,7 +210,12 @@ pub mod payments
                     val.cost = (price * 100f32) as i32;
                     if val.owner != name
                     {
-                        // TODO change owner and remove old owner from participants
+                        let owner = &val.owner;
+                        let part = self.participants.get_mut (owner).unwrap ();
+                        part.tasks.remove (&val.name);
+                        part.paid_tasks.remove (&val.name);
+                        val.participants.remove (owner);
+                        val.owner = String::from (name);
                     }
                     val
                 },
@@ -217,7 +223,7 @@ pub mod payments
                 {
                     self.tasks.insert (String::from (task_name), Task
                                   {
-                                      //name: String::from (task_name),
+                                      name: String::from (task_name),
                                       owner: String::from (name),
                                       participants: HashSet::new (),
                                       cost: (price * 100f32) as i32,
