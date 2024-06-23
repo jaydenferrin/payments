@@ -284,10 +284,10 @@ pub mod payments
                     None => continue,   // ignore it if they entered a bad name
                 };
                 // if this participant is paying for this task, don't add it to their list of tasks
-                if participant.paid_tasks.contains (task_name)
-                {
-                    return Ok (());
-                }
+                //if participant.paid_tasks.contains (task_name)
+                //{
+                //    return Ok (());
+                //}
                 // done with preparing, add stuff together
                 participant.tasks.insert (String::from (task_name));
                 participant.sum = None;
