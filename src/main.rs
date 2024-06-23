@@ -11,9 +11,9 @@ fn main ()
     // 'print' prints out the list of participants and how much they pay
     println! ("usage:\n\
 			  add NAME...\n\
-			  part TASK PARTICPANT...\n\
+			  part TASK PARTICIPANT...\n\
 			  pay PARTICIPANT TASK AMOUNT\n\
-			  print\n");
+			  print [-a|NAME...]\n");
     let mut pay = Payment::new ();
     loop
     {

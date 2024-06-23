@@ -45,12 +45,12 @@ pub mod payments
             let end = &parts[1..parts.len () - 1];
             match parts.get (0)
             {
-                Some (&"add") => return self.add (end),
+                Some (&"add")   => return self.add (end),
                 Some (&"part")  => return self.part (end),
                 Some (&"pay")   => return self.pay (end),
                 Some (&"print") => self.print (end),
-                Some (_) => return Err ("not a command"),
-                None => return Err ("syntax error"),
+                Some (_)        => return Err ("not a command"),
+                None            => return Err ("syntax error"),
             }
             Ok (())
         }
