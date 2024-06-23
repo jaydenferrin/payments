@@ -1,6 +1,8 @@
 pub mod payments
 {
     use std::collections::{HashMap, HashSet};
+    use std::fs::File;
+    use std::io::BufWriter;
     use regex::Regex;
     use serde::{Serialize, Deserialize};
     
@@ -71,7 +73,17 @@ pub mod payments
 
         fn save_file (&self, filename: &str) -> Result<(), &'static str>
         {
-            Ok (())
+            let file = match File::create (filename)
+            {
+                Ok (f) => f,
+                Err (_) => return Err ("Unable to open file"),
+            };
+            let write = BufWriter::new (file);
+            match serde_json::to_writer (write, &self)
+            {
+                Ok (_) => Ok (()),
+                Err (_) => Err ("Error serializing the object"),
+            }
         }
         
         fn save_string (&self) -> Result<(), &'static str>
