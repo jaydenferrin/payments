@@ -176,11 +176,34 @@ pub mod payments
             return Err (format! ("No task or participant found named {}", args[0]));
         }
 
+        fn remove_from (&mut self, part_name: &str, task_name: &str) -> PaymentResult
+        {
+            let Some (part) = self.participants.get_mut (part_name) else
+            {
+                return Err (format! ("No participant named {part_name} exists"));
+            };
+            if part.paid_tasks.contains (task_name)
+            {
+                return Err (format! ("{part_name} paid for {task_name}, remove {task_name} instead"));
+            }
+            if part.tasks.remove (task_name)
+            {
+                // this task exists since it's listed as a task for the participant
+                let task = self.tasks.get_mut (task_name).unwrap ();
+                task.participants.remove (part_name);
+            }
+            Ok (())
+        }
+
         fn remove (&mut self, args: &[&str]) -> PaymentResult
         {
-            if args.is_empty ()
+            if args.len () == 2
             {
-                return Err (String::from ("Not enough arguments"));
+                return self.remove_from (args[0], args[1]);
+            }
+            if args.len () != 1
+            {
+                return Err (String::from ("Wrong number of arguments"));
             }
             // check if the removal is a participant
             if let Some (part) = self.participants.remove (args[0])
