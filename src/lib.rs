@@ -402,6 +402,10 @@ pub mod payments
                 Some (&n) => n,
                 None => return Err (String::from ("Not enough arguments")),
             };
+            if self.participants.contains_key (task_name)
+            {
+                return Err (format! ("Cannot add {task_name}, a participant exists with that name"));
+            }
             let price_string = match args.get (2)
             {
                 Some (&"") => return Err (String::from ("Not enough arguments")),
