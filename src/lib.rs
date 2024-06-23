@@ -58,6 +58,8 @@ pub mod payments
                 Some (&"print") => self.print (end),
                 Some (&"save")  => return self.save (end),
                 Some (&"load")  => return self.load (end),
+                Some (&"rename")=> return self.rename (end),
+                Some (&"remove")=> return self.remove (end),
                 Some (&a)       => return Err (format! ("{} not recognized as a command", a)),
                 None            => return Err (String::from ("syntax error")),
             }
@@ -120,6 +122,58 @@ pub mod payments
                 Err (e) => return Err (format! ("Something went wrong serializing the object:\n{}", e)),
             };
             println! ("{}", json);
+            Ok (())
+        }
+
+        fn rename (&mut self, args: &[&str]) -> PaymentResult
+        {
+            if args.len () < 2
+            {
+                return Err (String::from ("Not enough arguments"));
+            }
+            // see if we are renaming a participant
+            if let Some (mut part) = self.participants.remove (args[0])
+            {
+                // renaming a participant
+                for task_name in &part.tasks
+                {
+                    let task = self.tasks.get_mut (task_name).unwrap ();
+                    task.participants.remove (&part.name);
+                    task.participants.insert (String::from (args[1]));
+                    if part.paid_tasks.contains (task_name)
+                    {
+                        task.owner = String::from (args[1]);
+                    }
+                }
+                part.name = String::from (args[1]);
+                self.participants.insert (String::from (args[1]), part);
+            }
+            // check if there is a task with this name
+            else if let Some (mut task) = self.tasks.remove (args[0])
+            {
+                for name in &task.participants
+                {
+                    let part = self.participants.get_mut (name).unwrap ();
+                    part.tasks.remove (&task.name);
+                    part.tasks.insert (String::from (args[1]));
+                    if part.paid_tasks.remove (&task.name)
+                    {
+                        part.paid_tasks.insert (String::from (args[1]));
+                    }
+                }
+                task.name = String::from (args[1]);
+                self.tasks.insert (String::from (args[1]), task);
+            }
+            // nothing can be renamed, return error
+            else
+            {
+                return Err (format! ("No task or participant found named {}", args[0]));
+            }
+            Ok (())
+        }
+
+        fn remove (&mut self, args: &[&str]) -> PaymentResult
+        {
             Ok (())
         }
 
