@@ -198,17 +198,21 @@ pub mod payments
                 }
                 return Ok (());
             }
-            if let Some (task) = self.tasks.remove (args[0])
+            match self.remove_task (args[0])
             {
-                for name in &task.participants
-                {
-                    let part = self.participants.get_mut (name).unwrap ();
-                    part.tasks.remove (&task.name);
-                    part.paid_tasks.remove (&task.name);
-                }
-                return Ok (());
+                Ok (_) => Ok (()),
+                Err (_) => Err (format! ("{} is not a task or participant", args[0])),
             }
-            Err (format! ("{} is not a task or participant", args[0]))
+            //if let Some (task) = self.tasks.remove (args[0])
+            //{
+            //    for name in &task.participants
+            //    {
+            //        let part = self.participants.get_mut (name).unwrap ();
+            //        part.tasks.remove (&task.name);
+            //        part.paid_tasks.remove (&task.name);
+            //    }
+            //    return Ok (());
+            //}
         }
 
         fn remove_task (&mut self, task_name: &str) -> PaymentResult
