@@ -147,9 +147,11 @@ pub mod payments
                 }
                 part.name = String::from (args[1]);
                 self.participants.insert (String::from (args[1]), part);
+
+                return Ok (())
             }
             // check if there is a task with this name
-            else if let Some (mut task) = self.tasks.remove (args[0])
+            if let Some (mut task) = self.tasks.remove (args[0])
             {
                 for name in &task.participants
                 {
@@ -163,17 +165,67 @@ pub mod payments
                 }
                 task.name = String::from (args[1]);
                 self.tasks.insert (String::from (args[1]), task);
+
+                return Ok (());
             }
             // nothing can be renamed, return error
-            else
-            {
-                return Err (format! ("No task or participant found named {}", args[0]));
-            }
-            Ok (())
+            return Err (format! ("No task or participant found named {}", args[0]));
         }
 
         fn remove (&mut self, args: &[&str]) -> PaymentResult
         {
+            if args.is_empty ()
+            {
+                return Err (String::from ("Not enough arguments"));
+            }
+            // check if the removal is a participant
+            if let Some (part) = self.participants.remove (args[0])
+            {
+                // remove this participant from all of their tasks
+                for task_name in &part.tasks
+                {
+                    if part.paid_tasks.contains (task_name)
+                    {
+                        continue;
+                    }
+                    let task = self.tasks.get_mut (task_name).unwrap ();
+                    task.participants.remove (&part.name);
+                }
+                // remove all tasks this participant owns
+                for task_name in &part.paid_tasks
+                {
+                    self.remove_task (task_name)?;
+                }
+                return Ok (());
+            }
+            if let Some (task) = self.tasks.remove (args[0])
+            {
+                for name in &task.participants
+                {
+                    let part = self.participants.get_mut (name).unwrap ();
+                    part.tasks.remove (&task.name);
+                    part.paid_tasks.remove (&task.name);
+                }
+                return Ok (());
+            }
+            Err (format! ("{} is not a task or participant", args[0]))
+        }
+
+        fn remove_task (&mut self, task_name: &str) -> PaymentResult
+        {
+            let Some (task) = self.tasks.remove (task_name) else
+            {
+                return Err (format! ("Task {} was not present to be removed", task_name));
+            };
+            for name in &task.participants
+            {
+                let Some (part) = self.participants.get_mut (name) else
+                {
+                    continue;
+                };
+                part.tasks.remove (task_name);
+                part.paid_tasks.remove (task_name);
+            }
             Ok (())
         }
 
