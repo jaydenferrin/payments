@@ -101,6 +101,16 @@ pub mod payments
                 }
         }
 
+        fn print_task (&self, task: &Task)
+        {
+            println! ("{} paid {} for {}", task.owner, task.cost as f32 / 100f32, task.name);
+            println! ("  participants: {}", task.participants.len ());
+            for part in &task.participants
+            {
+                println! ("    {}", part);
+            }
+        }
+
         fn print (&mut self, args: &[&str])
         {
             self.calculate ();
@@ -112,6 +122,14 @@ pub mod payments
                     for part in self.participants.values ()
                     {
                         self.print_participant (&part);
+                    }
+                    return;
+                }
+                if arg == "-t"
+                {
+                    for task in self.tasks.values ()
+                    {
+                        self.print_task (&task);
                     }
                     return;
                 }
