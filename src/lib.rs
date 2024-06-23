@@ -2,8 +2,9 @@ pub mod payments
 {
     use std::collections::{HashMap, HashSet};
     use regex::Regex;
+    use serde::{Serialize, Deserialize};
     
-    #[derive(Debug)]
+    #[derive(Debug, Deserialize, Serialize)]
     struct Participant
     {
         pub name: String,
@@ -12,7 +13,7 @@ pub mod payments
         pub sum: Option<f32>,
     }
     
-    #[derive(Debug)]
+    #[derive(Debug, Deserialize, Serialize)]
     struct Task
     {
         pub name: String,
@@ -21,7 +22,7 @@ pub mod payments
         pub cost: i32,
     }
 
-    #[derive(Debug)]
+    #[derive(Debug, Deserialize, Serialize)]
     pub struct Payment
     {
         participants: HashMap<String, Participant>,
@@ -51,9 +52,36 @@ pub mod payments
                 Some (&"part")  => return self.part (end),
                 Some (&"pay")   => return self.pay (end),
                 Some (&"print") => self.print (end),
+                Some (&"save")  => return self.save (end),
                 Some (_)        => return Err ("not a command"),
                 None            => return Err ("syntax error"),
             }
+            Ok (())
+        }
+
+        fn save (&mut self, args: &[&str]) -> Result<(), &'static str>
+        {
+            self.calculate ();
+            match args.get (0)
+            {
+                Some (&s) => return self.save_file (s),
+                None => return self.save_string (),
+            }
+        }
+
+        fn save_file (&self, filename: &str) -> Result<(), &'static str>
+        {
+            Ok (())
+        }
+        
+        fn save_string (&self) -> Result<(), &'static str>
+        {
+            let json = match serde_json::to_string_pretty (&self)
+            {
+                Ok (val) => val,
+                Err (_) => return Err ("Something went wrong serializing the object"),
+            };
+            println! ("{}", json);
             Ok (())
         }
 
