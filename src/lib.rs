@@ -2,7 +2,7 @@ pub mod payments
 {
     use std::collections::{HashMap, HashSet};
     use std::fs::File;
-    use std::io::BufWriter;
+    use std::io::{BufWriter, BufReader};
     use regex::Regex;
     use serde::{Serialize, Deserialize};
     
@@ -55,11 +55,35 @@ pub mod payments
                 Some (&"pay")   => return self.pay (end),
                 Some (&"print") => self.print (end),
                 Some (&"save")  => return self.save (end),
+                Some (&"load")  => return self.load (end),
                 Some (_)        => return Err ("not a command"),
                 None            => return Err ("syntax error"),
             }
             Ok (())
         }
+
+        fn load (&mut self, args: &[&str]) -> Result<(), &'static str>
+        {
+            let filename = match args.get (0)
+            {
+                Some (&f) => f,
+                None => return Err ("Not enough arguments"),
+            };
+            let file = match File::open (filename)
+            {
+                Ok (f) => f,
+                Err (_) => return Err ("Unable to open file"),
+            };
+            let payment: Payment = match serde_json::from_reader (BufReader::new (file))
+            {
+                Ok (pay) => pay,
+                Err (_) => return Err ("Error deserializing file"),
+            };
+            self.participants = payment.participants;
+            self.tasks = payment.tasks;
+            Ok (())
+        }
+
 
         fn save (&mut self, args: &[&str]) -> Result<(), &'static str>
         {
@@ -79,7 +103,7 @@ pub mod payments
                 Err (_) => return Err ("Unable to open file"),
             };
             let write = BufWriter::new (file);
-            match serde_json::to_writer (write, &self)
+            match serde_json::to_writer_pretty (write, &self)
             {
                 Ok (_) => Ok (()),
                 Err (_) => Err ("Error serializing the object"),
