@@ -178,6 +178,11 @@ pub mod payments
 
         fn remove_from (&mut self, part_name: &str, task_name: &str) -> PaymentResult
         {
+            if part_name == "all" || task_name == "all"
+            {
+                return Err (String::from ("Unable to remove all tasks"));
+            }
+
             let Some (part) = self.participants.get_mut (part_name) else
             {
                 return Err (format! ("No participant named {part_name} exists"));
@@ -234,6 +239,10 @@ pub mod payments
 
         fn remove_task (&mut self, task_name: &str) -> PaymentResult
         {
+            if task_name == "all"
+            {
+                return Err (String::from ("Unable to remove all tasks"));
+            }
             let Some (task) = self.tasks.remove (task_name) else
             {
                 return Err (format! ("Task {} was not present to be removed", task_name));
@@ -365,6 +374,7 @@ pub mod payments
                 {
                     "" => return Err (String::from ("Not enough arguments")),
                     "-a" => return Err (String::from ("invalid name")),
+                    "all" => continue,
                     n => n,
                 };
                 // if there is already a participant with this name, we don't want
@@ -393,12 +403,14 @@ pub mod payments
             let name = match args.get (0)
             {
                 Some (&"") => return Err (String::from ("Not enough arguments")),
+                Some (&"all") => return Err (String::from ("Cannot use all here")),
                 Some (&n) => n,
                 None => return Err (String::from ("Not enough arguments")),
             };
             let task_name = match args.get (1)
             {
                 Some (&"") => return Err (String::from ("Not enough arguments")),
+                Some (&"all") => return Err (String::from ("Cannot use all here")),
                 Some (&n) => n,
                 None => return Err (String::from ("Not enough arguments")),
             };
@@ -483,6 +495,12 @@ pub mod payments
                 Some (&n) => n,
                 None => return Err (String::from ("Not enough arguments")),
             };
+
+            if task_name == "all" && args[1] == "all"
+            {
+                return self.part_all ();
+            }
+
             let Some (task) = self.tasks.get_mut (task_name) else
             {
                 return Err (format! ("Task {task_name} has not yet been added"));
@@ -502,6 +520,21 @@ pub mod payments
                 participant.tasks.insert (String::from (task_name));
                 participant.sum = None;
                 task.participants.insert (String::from (arg));
+            }
+            Ok (())
+        }
+
+        /// used to add all participants to all tasks
+        fn part_all (&mut self) -> PaymentResult
+        {
+            for task in self.tasks.values_mut ()
+            {
+                for part in self.participants.values_mut ()
+                {
+                    part.tasks.insert (task.name.clone ());
+                    part.sum = None;
+                    task.participants.insert (part.name.clone ());
+                }
             }
             Ok (())
         }
