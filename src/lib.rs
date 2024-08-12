@@ -483,17 +483,15 @@ pub mod payments
                 Some (&n) => n,
                 None => return Err (String::from ("Not enough arguments")),
             };
-            let task = match self.tasks.get_mut (task_name)
+            let Some (task) = self.tasks.get_mut (task_name) else
             {
-                Some (result) => result,
-                None => return Err (format! ("Task {task_name} has not yet been added")),
+                return Err (format! ("Task {task_name} has not yet been added"));
             };
             for &arg in &args[1..]
             {
-                let participant = match self.participants.get_mut (arg)
+                let Some (participant) = self.participants.get_mut (arg) else
                 {
-                    Some (result) => result,
-                    None => continue,   // ignore it if they entered a bad name
+                    continue;   // ignore it if they entered a bad name
                 };
                 // if this participant is paying for this task, don't add it to their list of tasks
                 //if participant.paid_tasks.contains (task_name)
