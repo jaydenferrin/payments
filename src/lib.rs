@@ -14,7 +14,24 @@ pub mod payments
         pub name: String,
         pub tasks: HashSet<String>,
         pub paid_tasks: HashSet<String>,
+        pub payments_made: Option<Vec<i32>>,
+        #[serde(skip)]
         pub sum: Option<f32>,
+    }
+
+    impl Participant
+    {
+        pub fn new (name: &str) -> Self
+        {
+            Self
+            {
+                name: String::from (name),
+                tasks: HashSet::new (),
+                paid_tasks: HashSet::new (),
+                payments_made: Some (Vec::new ()),
+                sum: None,
+            }
+        }
     }
     
     #[derive(Debug, Deserialize, Serialize)]
@@ -52,16 +69,17 @@ pub mod payments
             let end = &parts[1..parts.len () - 1];
             match parts.get (0)
             {
-                Some (&"add")   => return self.add (end),
-                Some (&"part")  => return self.part (end),
-                Some (&"pay")   => return self.pay (end),
-                Some (&"print") => self.print (end),
-                Some (&"save")  => return self.save (end),
-                Some (&"load")  => return self.load (end),
-                Some (&"rename")=> return self.rename (end),
-                Some (&"remove")=> return self.remove (end),
-                Some (&a)       => return Err (format! ("{} is not recognized as a command", a)),
-                None            => return Err (String::from ("syntax error")),
+                Some (&"add")     => return self.add (end),
+                Some (&"part")    => return self.part (end),
+                Some (&"payment") => return self.payment (end),
+                Some (&"pay")     => return self.pay (end),
+                Some (&"print")   => self.print (end),
+                Some (&"save")    => return self.save (end),
+                Some (&"load")    => return self.load (end),
+                Some (&"rename")  => return self.rename (end),
+                Some (&"remove")  => return self.remove (end),
+                Some (&a)         => return Err (format! ("{} is not recognized as a command", a)),
+                None              => return Err (String::from ("syntax error")),
             }
             Ok (())
         }
@@ -278,6 +296,13 @@ pub mod payments
                     let task = self.tasks.get (task_name).unwrap ();
                     sum -= task.cost as f32;
                 }
+                if let Some (amounts) = &part.payments_made
+                {
+                    for &amount in amounts
+                    {
+                        sum -= amount as f32;
+                    }
+                }
                 part.sum = Some (sum.round () / 100f32);
             }
         }
@@ -309,6 +334,18 @@ pub mod payments
                           self.tasks.get (task_name)
                           .unwrap ()
                           .cost as f32 / 100f32);
+            }
+            let Some (amounts) = &part.payments_made else
+            {
+                return;
+            };
+            if !amounts.is_empty ()
+            {
+                println! ("  has paid:");
+            }
+            for &amount in amounts
+            {
+                println! ("    {}", amount as f32 / 100f32);
             }
         }
 
@@ -387,13 +424,7 @@ pub mod payments
                 {
                     return Err (format! ("A task named {name} exists"));
                 }
-                self.participants.insert (String::from (name), Participant
-                                  {
-                                      name: String::from (name),
-                                      tasks: HashSet::new (),
-                                      paid_tasks: HashSet::new (),
-                                      sum: None,
-                                  });
+                self.participants.insert (String::from (name), Participant::new (name));
             }
             Ok (())
         }
@@ -434,13 +465,7 @@ pub mod payments
             // if this participant doesn't yet exist, add them
             if !self.participants.contains_key (name)
             {
-                self.participants.insert (String::from (name), Participant
-                                  {
-                                      name: String::from (name),
-                                      tasks: HashSet::new (),
-                                      paid_tasks: HashSet::new (),
-                                      sum: None,
-                                  });
+                self.participants.insert (String::from (name), Participant::new (name));
             }
             // see if the task is being edited or added
             let task = match self.tasks.get_mut (task_name)
@@ -537,6 +562,53 @@ pub mod payments
                 }
             }
             Ok (())
+        }
+
+        fn payment (&mut self, args: &[&str]) -> PaymentResult
+        {
+            let participant = self.verify_part (args.get (0))?;
+            let amount = Self::verify_amount (args.get (1))?;
+            if let Some (fu) = &mut participant.payments_made
+            {
+                fu.push (amount);
+            }
+            else
+            {
+                participant.payments_made = Some (vec![amount]);
+            }
+            Ok (())
+        }
+
+        fn verify_part (&mut self, arg: Option<&&str>) -> Result<&mut Participant, String>
+        {
+            let part_name = match arg
+            {
+                Some (&"") => return Err (String::from ("Not enough arguments")),
+                Some (&n) => n,
+                None => return Err (String::from ("Not enough arguments")),
+            };
+            let Some (part) = self.participants.get_mut (part_name) else
+            {
+                return Err (format! ("Participant {} has not yet been added", part_name));
+            };
+            Ok (part)
+        }
+
+        fn verify_amount (arg: Option<&&str>) -> Result<i32, String>
+        {
+            let price_string = match arg
+            {
+                Some (&"") => return Err (String::from ("Not enough arguments")),
+                Some (&n) => n,
+                None => return Err (String::from ("Not enough arguments")),
+            };
+            match price_string.parse::<f32> ()
+            {
+                Ok (p) => Ok ((p * 100f32) as i32),
+                Err (_) => return Err (format! (
+                        "{} not a valid decimal number for the price"
+                        , price_string)),
+            }
         }
     }
 }
