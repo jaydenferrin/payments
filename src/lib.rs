@@ -609,20 +609,33 @@ pub mod payments
 
         fn payment (&mut self, args: &[&str]) -> PaymentResult
         {
-            let participant = self.verify_part (args.get (0))?;
-            let amount = Self::verify_amount (args.get (1))?;
-            if let Some (fu) = &mut participant.payments_made
+            let amount = Self::verify_amount (args.get (2))?;
+            self.verify_part (args.get(0))?;
+            self.verify_part (args.get(1))?;
             {
-                fu.push (amount);
+                let participant = self.participants.get_mut (args[0]).unwrap ();
+                if let Some (fu) = &mut participant.payments_made
+                {
+                    fu.push (amount);
+                }
+                else
+                {
+                    participant.payments_made = Some (vec![amount]);
+                }
+            }
+            let recipient = self.participants.get_mut (args[1]).unwrap ();
+            if let Some (fu) = &mut recipient.payments_made
+            {
+                fu.push (-amount);
             }
             else
             {
-                participant.payments_made = Some (vec![amount]);
+                recipient.payments_made = Some (vec![-amount]);
             }
             Ok (())
         }
 
-        fn verify_part (&mut self, arg: Option<&&str>) -> Result<&mut Participant, String>
+        fn verify_part (&self, arg: Option<&&str>) -> PaymentResult
         {
             let part_name = match arg
             {
@@ -630,11 +643,11 @@ pub mod payments
                 Some (&n) => n,
                 None => return Err (String::from ("Not enough arguments")),
             };
-            let Some (part) = self.participants.get_mut (part_name) else
+            if !self.participants.contains_key (part_name)
             {
                 return Err (format! ("Participant {} has not yet been added", part_name));
-            };
-            Ok (part)
+            }
+            Ok (())
         }
 
         fn verify_amount (arg: Option<&&str>) -> Result<i32, String>
