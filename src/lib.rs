@@ -526,6 +526,16 @@ pub mod payments
                 return self.part_all ();
             }
 
+            if task_name == "all"
+            {
+                return self.part_all_task (&args[1..]);
+            }
+
+            if args[1] == "all"
+            {
+                return self.part_all_part (task_name);
+            }
+
             let Some (task) = self.tasks.get_mut (task_name) else
             {
                 return Err (format! ("Task {task_name} has not yet been added"));
@@ -560,6 +570,39 @@ pub mod payments
                     part.sum = None;
                     task.participants.insert (part.name.clone ());
                 }
+            }
+            Ok (())
+        }
+
+        fn part_all_task (&mut self, args: &[&str]) -> PaymentResult
+        {
+            for task in self.tasks.values_mut ()
+            {
+                for &arg in args
+                {
+                    let Some (participant) = self.participants.get_mut (arg) else
+                    {
+                        continue;
+                    };
+                    participant.tasks.insert (task.name.clone ());
+                    participant.sum = None;
+                    task.participants.insert (String::from (arg));
+                }
+            }
+            Ok (())
+        }
+
+        fn part_all_part (&mut self, task_name: &str) -> PaymentResult
+        {
+            let Some (task) = self.tasks.get_mut (task_name) else
+            {
+                return Err (format! ("Task {task_name} has not yet been added"));
+            };
+            for part in self.participants.values_mut ()
+            {
+                part.tasks.insert (task.name.clone ());
+                part.sum = None;
+                task.participants.insert (part.name.clone ());
             }
             Ok (())
         }
